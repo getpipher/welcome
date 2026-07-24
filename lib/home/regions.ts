@@ -249,22 +249,22 @@ export function renderMenu(
   const lines: string[] = [];
   if (compact) {
     lines.push(menuLine("sessions", [
-      ...(sRange ? [[sRange, "sw"] as [string, string]] : []),
-      ["[s]", "list"], ["[n]", "new"], ["[r]", "res"], ["[f]", "fork"],
+      ...(sRange ? [[sRange, "/welcome:sw"] as [string, string]] : []),
+      ["[s]", "/welcome:sw"], ["[n]", "/welcome:new"], ["[r]", "/welcome:res"], ["[f]", "/welcome:fork"],
     ], c));
-    lines.push(menuLine("projects", pRange ? [[pRange, "open"] as [string, string]] : [], c));
+    lines.push(menuLine("projects", pRange ? [[pRange, "/welcome:proj"] as [string, string]] : [], c));
     lines.push(menuLine("model", [["[m]", "pick"], ["[T]", "think"], ["[h]", "theme"]], c));
-    lines.push(menuLine("workflow", [["[t]", "todo"], ["[c]", "cfg"], ["[/]", "cmd"]], c));
-    lines.push(menuLine("system", [["[?]", "help"], ["[R]", "rld"], ["[q]", "quit"]], c));
+    lines.push(menuLine("workflow", [["[t]", "/todo"], ["[/]", "cmds"]], c));
+    lines.push(menuLine("system", [["[?]", "help"], ["[R]", "/welcome:rld"], ["[q]", "quit"]], c));
   } else {
     lines.push(menuLine("sessions", [
-      ...(sRange ? [[sRange, "switch"] as [string, string]] : []),
-      ["[s]", "list"], ["[n]", "new"], ["[r]", "resume"], ["[f]", "fork"],
+      ...(sRange ? [[sRange, "/welcome:switch"] as [string, string]] : []),
+      ["[s]", "/welcome:switch"], ["[n]", "/welcome:new"], ["[r]", "/welcome:resume"], ["[f]", "/welcome:fork"],
     ], c));
-    lines.push(menuLine("projects", pRange ? [[pRange, "open (fresh session in that dir)"] as [string, string]] : [], c));
-    lines.push(menuLine("model", [["[m]", "pick"], ["[T]", "thinking"], ["[h]", "theme"]], c));
-    lines.push(menuLine("workflow", [["[t]", "todo triage"], ["[c]", "config"], ["[/]", "commands"]], c));
-    lines.push(menuLine("system", [["[?]", "help/keys"], ["[R]", "reload"], ["[q]", "quit"]], c));
+    lines.push(menuLine("projects", pRange ? [[pRange, "/welcome:open-project"] as [string, string]] : [], c));
+    lines.push(menuLine("model", [["[m]", "pick model"], ["[T]", "thinking"], ["[h]", "theme"]], c));
+    lines.push(menuLine("workflow", [["[t]", "/todo"], ["[/]", "commands"]], c));
+    lines.push(menuLine("system", [["[?]", "help/keys"], ["[R]", "/welcome:reload"], ["[q]", "quit"]], c));
   }
   return ["", ...lines.map((l) => clip(l, width))];
 }
@@ -287,4 +287,53 @@ export function renderFooter(
   const stats = segs.join(c.dim(" · "));
   const greet = c.muted(`${greeting(now)}  — key or type to begin`);
   return ["", clip(stats, width), clip(greet, width)];
+}
+
+/** A single help-table row: `key   action   command?`. */
+function helpRow(c: HomeColors, key: string, action: string, command: string | undefined): string {
+  const k = c.key(key.padEnd(6, " "));
+  const a = c.text(action);
+  const cmd = command ? c.dim(`  ${command}`) : "";
+  return `${k}  ${a}${cmd}`;
+}
+
+/** Help/keys sub-overlay. Renders centered; Esc returns to home (caller handles). */
+export function renderHelp(c: HomeColors, width: number, sessionCount: number, projectCount: number): string[] {
+  const sRange = sessionCount === 0 ? "" : sessionCount === 1 ? "1" : `1-${sessionCount}`;
+  const pStart = sessionCount + 1;
+  const pRange = projectCount === 0 ? "" : projectCount === 1 ? `${pStart}` : `${pStart}-${pStart + projectCount - 1}`;
+
+  const rows: string[] = [
+    c.logo("R E C T O R   L A B S  —  keys"),
+    "",
+    c.muted("sessions"),
+    helpRow(c, sRange || "1-N", "switch to session", "/welcome:switch <n>"),
+    helpRow(c, "s", "session picker", "/welcome:switch"),
+    helpRow(c, "n", "new session", "/welcome:new"),
+    helpRow(c, "r", "resume last", "/welcome:resume"),
+    helpRow(c, "f", "fork current", "/welcome:fork"),
+    "",
+    c.muted("projects"),
+    helpRow(c, pRange || "N+1-M", "resume session in repo", "/welcome:open-project <n>"),
+    "",
+    c.muted("model"),
+    helpRow(c, "m", "pick model", undefined),
+    helpRow(c, "T", "thinking level", undefined),
+    helpRow(c, "h", "theme", undefined),
+    "",
+    c.muted("workflow"),
+    helpRow(c, "t", "triage TODOs", "/todo"),
+    helpRow(c, "/", "command palette", undefined),
+    "",
+    c.muted("system"),
+    helpRow(c, "?", "this help", undefined),
+    helpRow(c, "R", "reload pi", "/welcome:reload"),
+    helpRow(c, "q", "quit pi", undefined),
+    "",
+    c.dim("One-key actions run instantly. Command-backed actions run by typing the"),
+    c.dim("/welcome:* command after Esc. v0.2 will light them up as one-key."),
+    "",
+    c.muted("Esc returns to home"),
+  ];
+  return ["", ...rows.map((l) => center(clip(l, width), width))];
 }
