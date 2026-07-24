@@ -26,8 +26,10 @@ export default function welcomeExtension(pi: ExtensionAPI): void {
 
   pi.registerShortcut("alt+h", {
     description: "Re-open the @getpipher/welcome home page",
-    handler: (_ctx) => {
-      // wired in Task 12
+    handler: (ctx) => {
+      void showHomePage(ctx).catch((err: unknown) => {
+        process.stderr.write(`[welcome] home page failed: ${String(err)}\n`);
+      });
     },
   });
 }
