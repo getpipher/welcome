@@ -198,7 +198,7 @@ Each component has one clear purpose, communicates through the `HomePage` parent
 
 ## 11. Implementation risks (verify early)
 
-1. **Keystroke forwarding** — after dismiss, the triggering non-menu key must reach the native editor so typing is instant. Verify `pi.ui.custom()` supports re-injecting a key event; fallback is `pi.ui.pasteToEditor(char)` or `setEditorText` + focus. This is the make-or-break for the "native-after" feel. **Verify in a spike first, before building the rest.**
+1. **Keystroke forwarding — RESOLVED (infeasible).** Spike (Task 2) proved `pi.ui.custom({overlay:true})` steals focus and `done()` resets the editor; no combination of `pasteToEditor`/`setEditorText`/deferred paste could re-inject the first char ("hello" → "ello" every time). **Resolution: pivot to B2** — explicit dismiss, no forward (§4.2). The user presses `Esc`/`Enter` to begin chatting, exactly like a neovim dashboard. No `forward-key.ts` forwarding primitive is needed; `classifyKey` is retained to route menu vs dismiss-only.
 2. **Native picker availability** for `T` (thinking level) and `h` (theme). If absent, build tiny custom pickers (small extra scope). `m` (model) and `/` (commands) and `c` (settings) are known-native.
 3. **armory-todo coupling** — read the open TODO count without tight coupling to armory-todo internals. Prefer reading the same source the injected `## Open TODOs (N)` block uses, or call the todo tool's count API if exposed.
 4. **Overlay focus on startup** — confirm `pi.ui.custom({ overlay: true })` shown during `session_start` receives keyboard focus before the native editor. If not, the dismiss-on-first-keystroke model needs adjustment (e.g., `setHeader` + a focus-grabbing child).

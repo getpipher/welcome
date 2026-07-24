@@ -4,7 +4,7 @@
 
 **Goal:** Build `@getpipher/welcome`, a pi extension that renders a stunning, dismissible "home page" overlay at startup (RECTOR LABS logo, recent sessions + git projects, full key legend, footer stats), then tears itself down on first keystroke so pi is 100% native — with no native hotkey rebinding.
 
-**Architecture:** A pure-UI pi extension. On `session_start` it calls `pi.ui.custom({ overlay: true })` to show a custom TUI component (built with `@earendil-works/pi-tui` primitives). The component owns keyboard focus, routes menu keys to pi APIs / native pickers, and on any non-menu key dismisses itself and forwards the keystroke to the native editor. An `alt+h` registered shortcut re-opens the overlay. Logic (responsive layout, data scanning, git status) is split into pure, unit-testable modules in `lib/`; the `extensions/welcome.ts` entry wires them to pi lifecycle.
+**Architecture:** A pure-UI pi extension. On `session_start` it calls `pi.ui.custom({ overlay: true })` to show a custom TUI component (built with `@earendil-works/pi-tui` primitives). The component owns keyboard focus, routes menu keys to pi APIs / native pickers, and **dismisses on `Esc`/`Enter` or any non-menu key** (B2 — no char forwarding; the spike in Task 2 proved forwarding infeasible). An `alt+h` registered shortcut re-opens the overlay. Logic (responsive layout, data scanning, git status) is split into pure, unit-testable modules in `lib/`; the `extensions/welcome.ts` entry wires them to pi lifecycle.
 
 **Tech Stack:** TypeScript (ES2022, strict), `@earendil-works/pi-coding-agent` (ExtensionAPI), `@earendil-works/pi-tui` (TUI components), `@earendil-works/pi-ai` (typebox schemas — not needed here, no tools), `tsx` (test runner), Node ≥ 20.
 
@@ -165,9 +165,11 @@ git init && git add -A && git commit -m "feat: scaffold @getpipher/welcome packa
 
 ---
 
-## Task 2: Spike — keystroke forwarding (make-or-break)
+## Task 2: Spike — dismiss model (was: keystroke forwarding)
 
-**Goal:** prove the dismiss+forward model works before building anything else. If this fails, the design's "native-after" promise breaks and we revisit.
+> **PIVOT 2026-07-24:** The original B1 goal (auto-dismiss + forward first char) was proven **infeasible** by the spike — `pi.ui.custom({overlay:true})` steals focus and `done()` resets the editor; `pasteToEditor`/`setEditorText`/deferred-paste all lost the first char ("hello"→"ello"). **Pivoted to B2: explicit dismiss, no forward.** This task now validates B2: `Esc`/`Enter`/any-non-menu-key dismiss (char consumed, not forwarded); menu keys act+dismiss. `classifyKey` is retained to route menu vs dismiss-only; no `forwardKeyToEditor` primitive is shipped. The Task-2 code blocks below are superseded by the actual files (`lib/home/forward-key.ts`, `lib/home/spike-overlay.ts`, `tests/forward-key.test.ts`) which reflect B2.
+
+**Goal:** prove the dismiss model works before building anything else.
 
 **Files:**
 - Create: `lib/home/forward-key.ts`, `lib/home/spike-overlay.ts`, `tests/forward-key.test.ts`
