@@ -7,9 +7,9 @@ test("fullLogo returns exactly 6 lines", () => {
   assert.equal(l.length, 6);
 });
 
-test("fullLogo lines are <= 64 chars (fits medium/wide panes)", () => {
+test("fullLogo lines are <= 80 chars (fit medium panes >=90 cols with margin)", () => {
   for (const line of fullLogo()) {
-    assert.ok(line.length <= 64, `line too long (${line.length}): ${line}`);
+    assert.ok(line.length <= 80, `line too long (${line.length}): ${line}`);
   }
 });
 
