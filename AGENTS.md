@@ -11,7 +11,7 @@ See `docs/superpowers/specs/2026-07-24-getpipher-welcome-design.md` for the full
 - **Startup** → full-screen home page overlay (logo, header, recent sessions + projects, menu, footer).
 - **Press a menu key** (`1`–`N`, `n`, `r`, `s`, `f`, `m`, `T`, `h`, `t`, `c`, `/`, `?`, `R`, `q`) → action runs, overlay dismisses. `?` layers help; `Esc` returns to home.
 - **Press any other key** → overlay dismisses and the keystroke flows into the native editor — typing "hello" works instantly, zero lost chars.
-- **`Alt+H`** (after dismiss) → re-open the home page.
+- **`Ctrl+Shift+H`** (after dismiss) → re-open the home page.
 
 ## Guarantees
 

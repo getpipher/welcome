@@ -1,4 +1,5 @@
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
+import { Key } from "@earendil-works/pi-tui";
 
 import { setApi } from "../lib/api.ts";
 import { registerWelcomeCommands } from "../lib/commands.ts";
@@ -24,7 +25,9 @@ export default function welcomeExtension(pi: ExtensionAPI): void {
     });
   });
 
-  pi.registerShortcut("alt+h", {
+  // ctrl+shift+h — Mac-robust (Option+H types ˙ and alt+h collides with pi's
+  // native tui.editor.cursorLeft). Follows @getpipher/vision's ctrl+shift+i pattern.
+  pi.registerShortcut(Key.ctrlShift("h"), {
     description: "Re-open the @getpipher/welcome home page",
     handler: (ctx) => {
       void showHomePage(ctx).catch((err: unknown) => {

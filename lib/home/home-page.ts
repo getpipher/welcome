@@ -6,7 +6,7 @@
  *    or types the /welcome:* command shown in the menu legend)
  *
  * `showHomePage(ctx)` is the single entry point, called from session_start
- * and the alt+h shortcut. The /welcome:* commands themselves live in
+ * and the ctrl+shift+h shortcut. The /welcome:* commands themselves live in
  * lib/commands.ts (they need ExtensionCommandContext, which only command
  * handlers receive — not the overlay).
  */

@@ -54,7 +54,7 @@ It's one extra keystroke to begin chatting — exactly the neovim dashboard mode
 
 > `/welcome:open-project` **resumes** the most-recent session in the chosen project (not "new fresh session in dir"). pi's `newSession()` is fixed to the current cwd, and `SessionManager.create()` doesn't persist the session header until the first agent response — so a fresh session in another dir isn't doable from an extension. Resuming is the honest, working v0.1 semantics; start pi in the dir to create the first session there.
 
-**Reopen:** `Alt+H` re-shows the home page any time (requires `macos-option-as-alt=true` in Ghostty).
+**Reopen:** `Ctrl+Shift+H` re-shows the home page any time. Mac-friendly (unlike `Alt+H`, which types `˙` and collides with pi's native cursor-left).
 
 ## Install
 
@@ -62,11 +62,11 @@ It's one extra keystroke to begin chatting — exactly the neovim dashboard mode
 pi install npm:@getpipher/welcome
 ```
 
-No configuration required — works with default pi. No native hotkeys are rebound; `keybindings.json` is untouched. The only registered shortcut is `alt+h`.
+No configuration required — works with default pi. No native hotkeys are rebound; `keybindings.json` is untouched. The only registered shortcut is `ctrl+shift+h`.
 
 ## Compatibility
 
-pi ≥ 0.82. TypeScript (ES2022, strict). Node ≥ 20. No tools, no commands-as-LLM-tools, no providers — a pure-UI extension (one `session_start` handler + one `alt+h` shortcut + the `/welcome:*` commands).
+pi ≥ 0.82. TypeScript (ES2022, strict). Node ≥ 20. No tools, no commands-as-LLM-tools, no providers — a pure-UI extension (one `session_start` handler + one `ctrl+shift+h` shortcut + the `/welcome:*` commands).
 
 ## v0.2 & upstream ask
 
