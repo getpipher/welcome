@@ -8,25 +8,28 @@ A stunning, dismissible **home-page overlay** for the [pi coding agent](https://
 
 On `session_start` (startup and `/reload` only — not on `new`/`resume`/`fork` navigation), it shows a full-screen overlay:
 
-- **RECTOR LABS** ASCII logo (full block ≥ 90 cols, compact wordmark below).
+- **RECTOR LABS** ASCII logo, width-aware: compact wordmark under 60 cols, small block (plain ASCII) at 60–119, full block at ≥ 120 — never overflows or clips.
 - **Header**: current datetime, `cwd`, git branch + status glyph.
 - **Recent sessions** (from pi's session manager) and **recent projects** (git scan of `~/local-dev` + `~/dotfiles`, cached 5 min), each row with branch + dirty/ahead/behind/conflict status and relative time.
 - **Two-column key legend** grouped under `sessions` / `projects` / `model` / `workflow` / `system`.
 - **Footer**: open TODO count (armory-todo, loose coupling), current model, pi version, session count, time-based greeting.
 - Responsive: single-column stacked recents + abbreviated menu under 90 cols; side-by-side + full menu at 90–149; 6+6 recents at ≥ 150.
 
-## The dismiss model (B2)
+## The dismiss model (forwarding)
 
-pi's `ui.custom({overlay:true})` steals keyboard focus and `done()` resets the editor, so forwarding the first keystroke to the native editor is **infeasible** (the first char is lost — `"hello"` → `"ello"`). This extension uses the **B2 model**:
+The overlay owns keyboard focus at startup. Any key tears it down and hands control back to pi — and **single printable keystrokes forward into the native editor**, so typing `hello` at the splash lands `hello` in the editor with zero lost chars:
 
-- Press **Esc** (or Enter, or any non-launcher key) → the overlay dismisses. The key is **consumed, not forwarded**.
-- Then type natively — every character lands (Esc → `hello` → all 5 chars, zero lost).
+- **One-key actions** (`q`/`m`/`T`/`h`) → dismiss, then run (quit / model / thinking / theme).
+- **Any other single printable char** → dismiss, then `pasteToEditor` it into the now-focused editor. Typing flows straight through.
+- **Non-printable / multi-byte keys** (Esc, arrows, Ctrl+ combos) → dismiss only; re-press natively (they can't be cleanly re-injected).
 
-It's one extra keystroke to begin chatting — exactly the neovim dashboard model.
+> **Caveat:** `q`/`m`/`T`/`h` are hijacked as one-key actions, so typing a word that *starts* with one of them triggers that action (e.g. `hello` → opens the theme picker on `h`). The menu's `one-key` row lists them so you know. Everything else types through untouched.
+
+> Historically the 2026-07-24 spike found `pasteToEditor`-after-`done()` infeasible ("hello"→"ello") and shipped a no-forward B2 model. That's **overturned in pi 0.82.0+** — `done()` then `ctx.ui.pasteToEditor(char)` forwards cleanly.
 
 ## Keys
 
-**One-key launchers** (run instantly from the overlay):
+**One-key** (fire instantly from the overlay — the only intercepted letters):
 
 | Key | Action |
 |---|---|
@@ -34,25 +37,21 @@ It's one extra keystroke to begin chatting — exactly the neovim dashboard mode
 | `m` | pick model (`pi.setModel`) |
 | `T` | pick thinking level (`pi.setThinkingLevel`) |
 | `h` | pick theme (`ui.setTheme`) |
-| `?` | help/keys sub-overlay (Esc returns to home, **not** native) |
+| `?` | help/keys sub-overlay (Esc returns to home) |
 
-**Command-backed** (type the `/welcome:*` command after Esc — pi's extension API can't invoke commands from an overlay in v0.1; see [v0.2](#v02--upstream-ask)):
+**Command-backed** (type the `/welcome:*` command after Esc — pi v0.1 has no `invokeCommand` on overlay `ExtensionContext`, so these can't be one-key yet; see [v0.2](#v02--upstream-ask)):
 
-| Key | Command | Action |
-|---|---|---|
-| `1`–`N` | `/welcome:switch <n>` | switch to a recent session |
-| `s` | `/welcome:switch` | session picker |
-| `n` | `/welcome:new` | new session (current cwd) |
-| `r` | `/welcome:resume` | resume most-recent other session |
-| `f` | `/welcome:fork` | fork current session |
-| `N+1`–`M` | `/welcome:open-project <n>` | resume the most-recent session in that git project |
-| `R` | `/welcome:reload` | reload pi |
-| `t` | `/todo` | (armory-todo) triage |
-| `/` | native `/` | command palette |
+| Command | Action |
+|---|---|
+| `/welcome:switch [n]` | switch to a recent session (index arg or picker) |
+| `/welcome:new` | new session (current cwd) |
+| `/welcome:resume` | resume most-recent other session |
+| `/welcome:fork` | fork current session at the latest entry |
+| `/welcome:open-project [n]` | resume the most-recent session in a recent git project |
+| `/welcome:reload` | reload pi (extensions, skills, prompts, themes, keybindings) |
+| `/todo` | (armory-todo) triage |
 
-`/welcome:switch` and `/welcome:open-project` take a 1-based index arg or fall back to a picker; both ship argument completions.
-
-> `/welcome:open-project` **resumes** the most-recent session in the chosen project (not "new fresh session in dir"). pi's `newSession()` is fixed to the current cwd, and `SessionManager.create()` doesn't persist the session header until the first agent response — so a fresh session in another dir isn't doable from an extension. Resuming is the honest, working v0.1 semantics; start pi in the dir to create the first session there.
+The recent-sessions and recent-projects rows are numbered `1`…`N` as a reference index for the `/welcome:*` commands' `<n>` arg. `/welcome:switch` and `/welcome:open-project` take a 1-based index or fall back to a picker; both ship argument completions.
 
 **Reopen:** `Ctrl+Shift+H` re-shows the home page any time. Mac-friendly (unlike `Alt+H`, which types `˙` and collides with pi's native cursor-left).
 

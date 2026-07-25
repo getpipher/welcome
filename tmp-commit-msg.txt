@@ -1,0 +1,18 @@
+docs: rewrite README to match shipped forwarding model + honest menu
+
+The README still described the pre-v0.1.2 model: it claimed keystroke
+forwarding was infeasible (B2, "consumed not forwarded") and listed
+command-backed keys ([n]/[r]/[s]/[f]/[R]/[1-N]) as one-key launchers.
+Both are now false:
+
+- The dismiss model now forwards single printable chars to the native
+  editor via pasteToEditor (overturned in pi 0.82.0+). Rewrote the
+  section to describe the real one-key / forward / non-printable split
+  and the q/m/T/h hijack caveat.
+- The Keys section now lists only q/m/T/h/? as one-key (what actually
+  fires) and the /welcome:* commands as typed-after-Esc (the honest
+  menu shipped in v0.1.2).
+- Updated the logo line to the three-way width-aware variant.
+
+chore(ci): bump actions to checkout@v7, setup-node@v7,
+pnpm/action-setup@v6 to silence the Node.js 20 deprecated annotation.
