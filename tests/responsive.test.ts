@@ -2,13 +2,24 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { layoutFor, CHROME_ROWS, FULL_LOGO_LINES } from "../lib/responsive.ts";
 
-test("narrow (<90 cols): single column, wordmark, capped sessions/projects", () => {
+test("narrow (<90 cols): single column, small logo (60-119), capped sessions/projects", () => {
   const c = layoutFor(70, 30);
   assert.equal(c.layout, "narrow");
   assert.equal(c.recentsColumns, 1);
-  assert.equal(c.logo, "wordmark");
+  assert.equal(c.logo, "small");
   assert.ok(c.sessionsCount <= 3);
   assert.ok(c.projectsCount <= 2);
+});
+
+test("very narrow (<60 cols): wordmark logo", () => {
+  assert.equal(layoutFor(50, 30).logo, "wordmark");
+  assert.equal(layoutFor(59, 30).logo, "wordmark");
+  assert.equal(layoutFor(60, 30).logo, "small");
+});
+
+test("logo threshold: 119 → small, 120 → full", () => {
+  assert.equal(layoutFor(119, 30).logo, "small");
+  assert.equal(layoutFor(120, 30).logo, "full");
 });
 
 test("boundary 89 → narrow, 90 → medium", () => {

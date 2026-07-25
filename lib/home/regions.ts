@@ -11,7 +11,7 @@ import type { HomeColors } from "../theme.ts";
 import type { SessionEntry } from "../data/sessions.ts";
 import type { ProjectEntry } from "../data/projects.ts";
 import type { RepoStatus } from "../data/git.ts";
-import { fullLogo } from "../logo.ts";
+import { logoFor } from "../logo.ts";
 
 /** Right-pad a (possibly ANSI-colored) string to `width` visible cells. */
 export function padRight(s: string, width: number): string {
@@ -103,11 +103,21 @@ export function center(s: string, width: number): string {
   return " ".repeat(left) + s;
 }
 
-/** Logo region: themed logo lines, centered to `width`. */
+/** Logo region: themed logo lines, centered to `width`. Width-aware + defensive:
+ * picks the variant `layout` chose, but downgrades if it doesn't fit in `width`
+ * (handles stale/narrowed panes and CJK-font double-width box chars) so the logo
+ * never overflows and clips (the "RECTOR LA" bug). */
 export function renderLogo(layout: LayoutConfig, c: HomeColors, width: number): string[] {
-  const logo = layout.logo === "full"
-    ? ["", ...fullLogo().map((l) => c.logo(l))]
-    : ["", c.logo("R E C T O R   L A B S")];
+  const variants: Array<"full" | "small" | "wordmark"> =
+    layout.logo === "full" ? ["full", "small", "wordmark"]
+    : layout.logo === "small" ? ["small", "wordmark"]
+    : ["wordmark"];
+  const chosen = variants.find((v) => {
+    const lines = logoFor(v);
+    return lines.every((l) => visibleWidth(l) <= width);
+  }) ?? "wordmark";
+
+  const logo = ["", ...logoFor(chosen).map((l) => c.logo(l))];
   return logo.map((l) => center(l, width));
 }
 
