@@ -1,5 +1,4 @@
 import { SessionManager, type SessionInfo } from "@earendil-works/pi-coding-agent";
-import { homedir } from "node:os";
 
 export interface SessionEntry {
   name: string;
@@ -10,18 +9,22 @@ export interface SessionEntry {
 }
 
 /**
- * Recent pi sessions across the default session dir (~/.pi/agent/sessions).
- * Returns entries sorted by last activity desc, excluding the current session.
- * `limit` caps the count.
+ * Recent pi sessions across the default session dir. Returns entries sorted by
+ * last activity desc, excluding the current session. `limit` caps the count.
+ *
+ * Calls `SessionManager.listAll()` with NO arg: the `listAll(sessionDir)` overload
+ * expects a dir that DIRECTLY contains .jsonl files (a single cwd-encoded
+ * folder), not the parent sessions dir. The no-arg form uses `getSessionsDir()`
+ * and recurses into per-cwd subdirs, which is what we want for a cross-project
+ * "recent sessions" list. Passing the parent dir returned 0 (the old bug).
  */
 export async function recentSessions(
   currentSessionId: string | undefined,
   limit: number,
 ): Promise<SessionEntry[]> {
-  const sessionDir = `${homedir()}/.pi/agent/sessions`;
   let infos: SessionInfo[];
   try {
-    infos = await SessionManager.listAll(sessionDir);
+    infos = await SessionManager.listAll();
   } catch {
     return [];
   }
