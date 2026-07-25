@@ -223,49 +223,55 @@ export function renderRecents(
   return out;
 }
 
-/** One menu line: `label   [k] action  [k] action ...`. Keys are pre-bracketed. */
-function menuLine(label: string, items: [string, string][], c: HomeColors): string {
-  const parts = [c.muted(label.padEnd(10, " "))];
-  for (const [k, a] of items) {
-    parts.push(`${c.key(k)} ${c.text(a)}`);
-  }
-  return parts.join(c.dim("  "));
+/** One menu line: `label   item · item ...` (items are pre-formatted strings). */
+function menuLine(label: string, items: string[], c: HomeColors): string {
+  return [c.muted(label.padEnd(10, " ")), items.join(c.dim(" · "))].join(c.dim("  "));
 }
 
-/** Menu region: 5 grouped key|action lines (compact form when narrow). */
+/** A one-key hint: `[k] action`. */
+function oneKey(c: HomeColors, k: string, action: string): string {
+  return `${c.key(k)} ${c.text(action)}`;
+}
+
+/**
+ * Menu region — honest two-tier legend:
+ *  - `one-key` row: only keys that fire instantly (`m`/`T`/`h`/`?`/`q`).
+ *  - command rows: bare `/welcome:*` slash commands to type after Esc (no fake
+ *    `[key]` prefix — pi v0.1 has no `invokeCommand` on the overlay ctx, so
+ *    `n`/`r`/`s`/`f`/`t`/`R`/digits can't be one-key; they forward to the editor
+ *    like any plain char instead).
+ * Compact form when narrow (shorter command names), same two-tier structure.
+ */
 export function renderMenu(
   layout: LayoutConfig,
   c: HomeColors,
   width: number,
-  sessionCount: number,
-  projectCount: number,
+  _sessionCount: number,
+  _projectCount: number,
 ): string[] {
-  const sRange = sessionCount === 0 ? "" : sessionCount === 1 ? "[1]" : `[1-${sessionCount}]`;
-  const pStart = sessionCount + 1;
-  const pEnd = sessionCount + projectCount;
-  const pRange = projectCount === 0 ? "" : projectCount === 1 ? `[${pStart}]` : `[${pStart}-${pEnd}]`;
-
   const compact = layout.layout === "narrow";
-  const lines: string[] = [];
-  if (compact) {
-    lines.push(menuLine("sessions", [
-      ...(sRange ? [[sRange, "/welcome:sw"] as [string, string]] : []),
-      ["[s]", "/welcome:sw"], ["[n]", "/welcome:new"], ["[r]", "/welcome:res"], ["[f]", "/welcome:fork"],
-    ], c));
-    lines.push(menuLine("projects", pRange ? [[pRange, "/welcome:proj"] as [string, string]] : [], c));
-    lines.push(menuLine("model", [["[m]", "pick"], ["[T]", "think"], ["[h]", "theme"]], c));
-    lines.push(menuLine("workflow", [["[t]", "/todo"], ["[/]", "cmds"]], c));
-    lines.push(menuLine("system", [["[?]", "help"], ["[R]", "/welcome:rld"], ["[q]", "quit"]], c));
-  } else {
-    lines.push(menuLine("sessions", [
-      ...(sRange ? [[sRange, "/welcome:switch"] as [string, string]] : []),
-      ["[s]", "/welcome:switch"], ["[n]", "/welcome:new"], ["[r]", "/welcome:resume"], ["[f]", "/welcome:fork"],
-    ], c));
-    lines.push(menuLine("projects", pRange ? [[pRange, "/welcome:open-project"] as [string, string]] : [], c));
-    lines.push(menuLine("model", [["[m]", "pick model"], ["[T]", "thinking"], ["[h]", "theme"]], c));
-    lines.push(menuLine("workflow", [["[t]", "/todo"], ["[/]", "commands"]], c));
-    lines.push(menuLine("system", [["[?]", "help/keys"], ["[R]", "/welcome:reload"], ["[q]", "quit"]], c));
-  }
+  const sw = compact ? "/welcome:sw" : "/welcome:switch";
+  const newCmd = "/welcome:new";
+  const res = compact ? "/welcome:res" : "/welcome:resume";
+  const fork = "/welcome:fork";
+  const proj = compact ? "/welcome:proj" : "/welcome:open-project";
+  const todo = "/todo";
+  const rld = compact ? "/welcome:rld" : "/welcome:reload";
+
+  const lines: string[] = [
+    menuLine("one-key", [
+      oneKey(c, "[m]", "model"),
+      oneKey(c, "[T]", "thinking"),
+      oneKey(c, "[h]", "theme"),
+      oneKey(c, "[?]", "help"),
+      oneKey(c, "[q]", "quit"),
+    ], c),
+    menuLine("sessions", [sw, newCmd, res, fork], c),
+    menuLine("projects", [`${proj} <n>`], c),
+    menuLine("workflow", [todo], c),
+    menuLine("system", [rld], c),
+    c.dim("  type a command after Esc, or just start typing"),
+  ];
   return ["", ...lines.map((l) => clip(l, width))];
 }
 
@@ -303,8 +309,8 @@ export function renderHelp(c: HomeColors, width: number, sessionCount: number, p
   const pStart = sessionCount + 1;
   const pRange = projectCount === 0 ? "" : projectCount === 1 ? `${pStart}` : `${pStart}-${pStart + projectCount - 1}`;
 
-  const rows: string[] = [
-    c.logo("R E C T O R   L A B S  —  keys"),
+  const title = c.logo("R E C T O R   L A B S  —  keys");
+  const body: string[] = [
     "",
     c.muted("sessions"),
     helpRow(c, sRange || "1-N", "switch to session", "/welcome:switch <n>"),
@@ -335,5 +341,15 @@ export function renderHelp(c: HomeColors, width: number, sessionCount: number, p
     "",
     c.muted("Esc returns to home"),
   ];
-  return ["", ...rows.map((l) => center(clip(l, width), width))];
+
+  // Left-align the body as a block: pad every row to the widest body row's
+  // visible width, then center the uniform-width block as a whole. This gives
+  // every row the same left edge (no zigzag) while keeping the block centered.
+  const blockW = Math.min(width, Math.max(...body.map((l) => visibleWidth(l))));
+  const blockLeft = Math.max(0, Math.floor((width - blockW) / 2));
+  const pad = " ".repeat(blockLeft);
+  const bodyLines = body.map((l) => pad + padRight(clip(l, blockW), blockW));
+
+  // Title stays centered independently on its own line.
+  return ["", center(clip(title, width), width), ...bodyLines];
 }

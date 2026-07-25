@@ -1,14 +1,17 @@
 /**
  * HomePage overlay — assembles all regions, owns keyboard focus, routes keys:
- *  - one-key launchers (q / m / T / h) → dismiss, then run the action
  *  - `?` → layer the help/keys sub-overlay on top (does NOT dismiss; Esc returns)
- *  - everything else → dismiss (B2: char is NOT forwarded; user types natively
- *    or types the /welcome:* command shown in the menu legend)
+ *  - one-key actions (`q` / `m` / `T` / `h`) → dismiss, then run the action
+ *  - any other single printable char → dismiss, then `pasteToEditor` it into the
+ *    native editor (typing "hello" works instantly — except `h`, a one-key action)
+ *  - non-printable / multi-byte (Esc, arrows, Ctrl+ combos) → dismiss only; user
+ *    re-presses natively
  *
  * `showHomePage(ctx)` is the single entry point, called from session_start
  * and the ctrl+shift+h shortcut. The /welcome:* commands themselves live in
  * lib/commands.ts (they need ExtensionCommandContext, which only command
- * handlers receive — not the overlay).
+ * handlers receive — not the overlay; pi v0.1 has no `invokeCommand` on the
+ * overlay ctx, so command-backed actions are typed, not one-key).
  */
 import { VERSION } from "@earendil-works/pi-coding-agent";
 import type { ExtensionContext } from "@earendil-works/pi-coding-agent";
@@ -31,6 +34,7 @@ import {
   tildify,
   padRight,
 } from "./regions.ts";
+import { routeHomeKey } from "./key-routing.ts";
 
 import { homedir } from "node:os";
 import { execFile } from "node:child_process";
@@ -138,26 +142,37 @@ export async function showHomePage(ctx: ExtensionContext): Promise<void> {
         }
         return;
       }
-      // `?` layers help on top of home — does NOT dismiss.
-      if (data === "?") {
-        helpMode = true;
-        tui.requestRender();
-        return;
+      const route = routeHomeKey(data);
+      switch (route.kind) {
+        case "help":
+          helpMode = true;
+          tui.requestRender();
+          return;
+        case "one-key": {
+          // Dismiss first, then run the action async (its dialog needs the overlay gone).
+          disposed = true;
+          done(undefined);
+          void runOneKeyAction(route.action, ctx).catch((e) =>
+            ctx.ui.notify(String(e), "error"),
+          );
+          return;
+        }
+        case "forward": {
+          // Dismiss, then paste the char into the now-focused native editor so
+          // typing "hello" works instantly (zero lost chars). The overlay must
+          // tear down before the paste lands, else it'd be swallowed by us.
+          disposed = true;
+          done(undefined);
+          ctx.ui.pasteToEditor(route.char);
+          return;
+        }
+        case "dismiss":
+          // Non-printable / multi-byte (Esc, arrows, Ctrl+ combos): can't be
+          // cleanly re-injected via pasteToEditor. Dismiss; user re-presses natively.
+          disposed = true;
+          done(undefined);
+          return;
       }
-      // One-key launchers: dismiss first, then run the action async (the action
-      // shows its own dialog, which needs the overlay gone).
-      const action = oneKeyAction(data);
-      if (action) {
-        disposed = true;
-        done(undefined);
-        void action(ctx).catch((e) => ctx.ui.notify(String(e), "error"));
-        return;
-      }
-      // Everything else (command-backed menu keys + any non-menu key): B2 dismiss.
-      // The char is NOT forwarded; the user types natively or types the
-      // /welcome:* command shown in the menu legend.
-      disposed = true;
-      done(undefined);
     };
 
     const comp: Component & { dispose?(): void } = {
@@ -175,31 +190,22 @@ export async function showHomePage(ctx: ExtensionContext): Promise<void> {
   });
 }
 
-/**
- * One-key launcher actions runnable from the overlay. Uses the stashed `pi`
- * (ExtensionAPI) for setModel/setThinkingLevel, which live on ExtensionAPI,
- * not ExtensionContext.
- */
-function oneKeyAction(raw: string): ((ctx: ExtensionContext) => Promise<void>) | null {
-  switch (raw) {
-    case "q":
-      return async (ctx) => {
-        ctx.shutdown();
-      };
-    case "m":
-      return async (ctx) => {
-        await pickModel(ctx);
-      };
-    case "T":
-      return async (ctx) => {
-        await pickThinking(ctx);
-      };
-    case "h":
-      return async (ctx) => {
-        await pickTheme(ctx);
-      };
-    default:
-      return null;
+/** One-key action tag → side effect. Uses the stashed `pi` (ExtensionAPI) for
+ * setModel/setThinkingLevel, which live on ExtensionAPI, not ExtensionContext. */
+async function runOneKeyAction(
+  action: "quit" | "model" | "thinking" | "theme",
+  ctx: ExtensionContext,
+): Promise<void> {
+  switch (action) {
+    case "quit":
+      ctx.shutdown();
+      return;
+    case "model":
+      return pickModel(ctx);
+    case "thinking":
+      return pickThinking(ctx);
+    case "theme":
+      return pickTheme(ctx);
   }
 }
 
