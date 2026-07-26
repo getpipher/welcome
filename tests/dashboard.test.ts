@@ -1,5 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
+import { visibleWidth } from "@earendil-works/pi-tui";
 
 import { buildDashboardLines } from "../lib/home/dashboard.ts";
 import { layoutFor } from "../lib/responsive.ts";
@@ -44,6 +45,6 @@ test("buildDashboardLines adapts to narrow layout (small logo, no overflow)", ()
     nowSec: 1, now: new Date(0),
   });
   for (const l of lines) {
-    assert.ok(l.length <= 70, `line must fit widget width: ${l.length}`);
+    assert.ok(visibleWidth(l) <= 70, `line must fit widget width: ${visibleWidth(l)}`);
   }
 });

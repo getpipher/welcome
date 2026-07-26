@@ -238,19 +238,12 @@ function menuLine(label: string, items: string[], c: HomeColors): string {
   return [c.muted(label.padEnd(10, " ")), items.join(c.dim(" · "))].join(c.dim("  "));
 }
 
-/** A one-key hint: `[k] action`. */
-function oneKey(c: HomeColors, k: string, action: string): string {
-  return `${c.key(k)} ${c.text(action)}`;
-}
-
 /**
- * Menu region — honest two-tier legend:
- *  - `one-key` row: only keys that fire instantly (`m`/`T`/`h`/`?`/`q`).
- *  - command rows: bare `/welcome:*` slash commands to type after Esc (no fake
- *    `[key]` prefix — pi v0.1 has no `invokeCommand` on the overlay ctx, so
- *    `n`/`r`/`s`/`f`/`t`/`R`/digits can't be one-key; they forward to the editor
- *    like any plain char instead).
- * Compact form when narrow (shorter command names), same two-tier structure.
+ * Menu region — information-only legend for the dashboard widget. The prompt
+ * is always live (no overlay, no key interception), so there are no one-key
+ * hotkeys. Lists the `/welcome:*` commands to type, plus pi's native keys for
+ * model/thinking/quit/theme (those aren't welcome's to claim). Compact form when
+ * narrow (shorter command names).
  */
 export function renderMenu(
   layout: LayoutConfig,
@@ -269,18 +262,11 @@ export function renderMenu(
   const rld = compact ? "/welcome:rld" : "/welcome:reload";
 
   const lines: string[] = [
-    menuLine("one-key", [
-      oneKey(c, "[m]", "model"),
-      oneKey(c, "[T]", "thinking"),
-      oneKey(c, "[h]", "theme"),
-      oneKey(c, "[?]", "help"),
-      oneKey(c, "[q]", "quit"),
-    ], c),
     menuLine("sessions", [sw, newCmd, res, fork], c),
     menuLine("projects", [`${proj} <n>`], c),
     menuLine("workflow", [todo], c),
-    menuLine("system", [rld], c),
-    c.dim("  type a command after Esc, or just start typing"),
+    menuLine("system", [rld, `${c.key("Ctrl+L")} model`, `${c.key("Shift+Tab")} thinking`, `${c.key("Ctrl+D")} quit`, `${c.key("/theme")} theme`], c),
+    c.dim("  Ctrl+Shift+H toggles this dashboard; just start typing to prompt"),
   ];
   return ["", ...lines.map((l) => clip(l, width))];
 }
@@ -303,63 +289,4 @@ export function renderFooter(
   const stats = segs.join(c.dim(" · "));
   const greet = c.muted(`${greeting(now)}  — key or type to begin`);
   return ["", clip(stats, width), clip(greet, width)];
-}
-
-/** A single help-table row: `key   action   command?`. */
-function helpRow(c: HomeColors, key: string, action: string, command: string | undefined): string {
-  const k = c.key(key.padEnd(6, " "));
-  const a = c.text(action);
-  const cmd = command ? c.dim(`  ${command}`) : "";
-  return `${k}  ${a}${cmd}`;
-}
-
-/** Help/keys sub-overlay. Renders centered; Esc returns to home (caller handles). */
-export function renderHelp(c: HomeColors, width: number, sessionCount: number, projectCount: number): string[] {
-  const sRange = sessionCount === 0 ? "" : sessionCount === 1 ? "1" : `1-${sessionCount}`;
-  const pStart = sessionCount + 1;
-  const pRange = projectCount === 0 ? "" : projectCount === 1 ? `${pStart}` : `${pStart}-${pStart + projectCount - 1}`;
-
-  const title = c.logo("R E C T O R   L A B S  —  keys");
-  const body: string[] = [
-    "",
-    c.muted("sessions"),
-    helpRow(c, sRange || "1-N", "switch to session", "/welcome:switch <n>"),
-    helpRow(c, "s", "session picker", "/welcome:switch"),
-    helpRow(c, "n", "new session", "/welcome:new"),
-    helpRow(c, "r", "resume last", "/welcome:resume"),
-    helpRow(c, "f", "fork current", "/welcome:fork"),
-    "",
-    c.muted("projects"),
-    helpRow(c, pRange || "N+1-M", "resume session in repo", "/welcome:open-project <n>"),
-    "",
-    c.muted("model"),
-    helpRow(c, "m", "pick model", undefined),
-    helpRow(c, "T", "thinking level", undefined),
-    helpRow(c, "h", "theme", undefined),
-    "",
-    c.muted("workflow"),
-    helpRow(c, "t", "triage TODOs", "/todo"),
-    helpRow(c, "/", "command palette", undefined),
-    "",
-    c.muted("system"),
-    helpRow(c, "?", "this help", undefined),
-    helpRow(c, "R", "reload pi", "/welcome:reload"),
-    helpRow(c, "q", "quit pi", undefined),
-    "",
-    c.dim("One-key actions run instantly. Command-backed actions run by typing the"),
-    c.dim("/welcome:* command after Esc. v0.2 will light them up as one-key."),
-    "",
-    c.muted("Esc returns to home"),
-  ];
-
-  // Left-align the body as a block: pad every row to the widest body row's
-  // visible width, then center the uniform-width block as a whole. This gives
-  // every row the same left edge (no zigzag) while keeping the block centered.
-  const blockW = Math.min(width, Math.max(...body.map((l) => visibleWidth(l))));
-  const blockLeft = Math.max(0, Math.floor((width - blockW) / 2));
-  const pad = " ".repeat(blockLeft);
-  const bodyLines = body.map((l) => pad + padRight(clip(l, blockW), blockW));
-
-  // Title stays centered independently on its own line.
-  return ["", center(clip(title, width), width), ...bodyLines];
 }
