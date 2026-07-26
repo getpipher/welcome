@@ -1,12 +1,12 @@
 # @getpipher/welcome
 
-A stunning, dismissible **home-page overlay** for the [pi coding agent](https://github.com/earendil-works/pi-coding-agent). Branded `RECTOR LABS` splash at startup — logo, recent sessions, recent git projects, a full key legend, and footer stats — then **tears itself down on the first keystroke** so pi is 100% native. No persistent chrome, no native hotkey rebinding.
+An information-only **startup dashboard** for the [pi coding agent](https://github.com/earendil-works/pi-coding-agent). At startup it mounts a branded `RECTOR LABS` panel above the live prompt — logo, recent sessions, recent git projects, a key legend, and footer stats — **alongside** pi's native `[Context]`/`[Skills]`/`[Extensions]` startup info, then clears itself on the first agent turn so it scrolls away like the rest of the startup output. No overlay, nothing occluded, no native hotkey rebinding, no key hijacking — the prompt is live the instant pi starts.
 
 > In-house for `@getpipher`. Built against pi 0.82.
 
 ## What it does
 
-On `session_start` (startup and `/reload` only — not on `new`/`resume`/`fork` navigation), it shows a full-screen overlay:
+On `session_start` (startup and `/reload` only — not on `new`/`resume`/`fork` navigation), it renders a dashboard panel above the editor via `setWidget({ placement: "aboveEditor" })`:
 
 - **RECTOR LABS** ASCII logo, width-aware: compact wordmark under 60 cols, small block (plain ASCII) at 60–119, full block at ≥ 120 — never overflows or clips.
 - **Header**: current datetime, `cwd`, git branch + status glyph.
@@ -15,31 +15,30 @@ On `session_start` (startup and `/reload` only — not on `new`/`resume`/`fork` 
 - **Footer**: open TODO count (armory-todo, loose coupling), current model, pi version, session count, time-based greeting.
 - Responsive: single-column stacked recents + abbreviated menu under 90 cols; side-by-side + full menu at 90–149; 6+6 recents at ≥ 150.
 
-## The dismiss model (forwarding)
+## Startup dashboard (widget, not an overlay)
 
-The overlay owns keyboard focus at startup. Any key tears it down and hands control back to pi — and **single printable keystrokes forward into the native editor**, so typing `hello` at the splash lands `hello` in the editor with zero lost chars:
+Welcome is **information-only**. On `session_start` it mounts a dashboard panel
+above the live prompt field via `ctx.ui.setWidget("welcome", …, { placement:
+"aboveEditor" })` — no overlay, nothing occluded. The prompt field is native and
+focused the instant pi starts; you can type immediately.
 
-- **One-key actions** (`q`/`m`/`T`/`h`) → dismiss, then run (quit / model / thinking / theme).
-- **Any other single printable char** → dismiss, then `pasteToEditor` it into the now-focused editor. Typing flows straight through.
-- **Non-printable / multi-byte keys** (Esc, arrows, Ctrl+ combos) → dismiss only; re-press natively (they can't be cleanly re-injected).
+- **Native startup is kept** (`quietStartup` stays `false`): pi's `[Context]` /
+  `[Skills]` / `[Extensions]` blocks and the package-update notice render as
+  normal, above the welcome dashboard. Nothing welcome shows is recreated from
+  pi-internal data — no drift.
+- **Startup-only:** on the first `agent_start` turn (you send a message and the
+  agent begins), welcome clears the widget — so the dashboard behaves like pi's
+  native startup blocks (shows, then scrolls away as you chat).
+- **Toggle:** `Ctrl+Shift+H` shows/hides the dashboard any time.
 
-> **Caveat:** `q`/`m`/`T`/`h` are hijacked as one-key actions, so typing a word that *starts* with one of them triggers that action (e.g. `hello` → opens the theme picker on `h`). The menu's `one-key` row lists them so you know. Everything else types through untouched.
-
-> Historically the 2026-07-24 spike found `pasteToEditor`-after-`done()` infeasible ("hello"→"ello") and shipped a no-forward B2 model. That's **overturned in pi 0.82.0+** — `done()` then `ctx.ui.pasteToEditor(char)` forwards cleanly.
+Welcome hijacks **no keys** — every keystroke goes to the prompt. Model /
+thinking / quit / theme use pi's native keybindings (`Ctrl+L` / `Shift+Tab` /
+`Ctrl+D` / `/theme`), listed in the dashboard's menu legend.
 
 ## Keys
 
-**One-key** (fire instantly from the overlay — the only intercepted letters):
-
-| Key | Action |
-|---|---|
-| `q` | quit pi (`ctx.shutdown()`) |
-| `m` | pick model (`pi.setModel`) |
-| `T` | pick thinking level (`pi.setThinkingLevel`) |
-| `h` | pick theme (`ui.setTheme`) |
-| `?` | help/keys sub-overlay (Esc returns to home) |
-
-**Command-backed** (type the `/welcome:*` command after Esc — pi v0.1 has no `invokeCommand` on overlay `ExtensionContext`, so these can't be one-key yet; see [v0.2](#v02--upstream-ask)):
+Welcome defines **no one-key hotkeys**. The dashboard's menu legend lists the
+`/welcome:*` commands to type and pi's native keys:
 
 | Command | Action |
 |---|---|
@@ -51,7 +50,25 @@ The overlay owns keyboard focus at startup. Any key tears it down and hands cont
 | `/welcome:reload` | reload pi (extensions, skills, prompts, themes, keybindings) |
 | `/todo` | (armory-todo) triage |
 
-The recent-sessions and recent-projects rows are numbered `1`…`N` as a reference index for the `/welcome:*` commands' `<n>` arg. `/welcome:switch` and `/welcome:open-project` take a 1-based index or fall back to a picker; both ship argument completions.
+| pi native | Action |
+|---|---|
+| `Ctrl+L` | pick model |
+| `Shift+Tab` | thinking level |
+| `Ctrl+D` | quit pi (when editor empty) |
+| `/theme` | theme |
+| `Ctrl+Shift+H` | toggle the welcome dashboard |
+
+The recent-sessions and recent-projects rows are numbered `1`…`N` as a
+reference index for the `/welcome:*` commands' `<n>` arg. `/welcome:switch` and
+`/welcome:open-project` take a 1-based index or fall back to a picker; both ship
+argument completions.
+
+> `/welcome:open-project` **resumes** the most-recent session in the chosen
+> project (not "new fresh session in dir"). pi's `newSession()` is fixed to the
+> current cwd, and `SessionManager.create()` doesn't persist the session
+> header until the first agent response — so a fresh session in another dir
+> isn't doable from an extension. Resuming is the honest, working v0.1
+> semantics; start pi in the dir to create the first session there.
 
 **Reopen:** `Ctrl+Shift+H` re-shows the home page any time. Mac-friendly (unlike `Alt+H`, which types `˙` and collides with pi's native cursor-left).
 
@@ -69,7 +86,7 @@ pi ≥ 0.82. TypeScript (ES2022, strict). Node ≥ 20. No tools, no commands-as-
 
 ## v0.2 & upstream ask
 
-The session-control menu actions (`new` / `resume` / `fork` / `switch` / `open-project` / `reload`) are registered as `/welcome:*` commands because their handlers receive `ExtensionCommandContext` — the **only** place pi exposes session mutation. The overlay's `handleInput` and `registerShortcut` handlers receive plain `ExtensionContext`, and there is no `invokeCommand`/`runAction` API, so the overlay can't fire those commands by key.
+The session-control menu actions (`new` / `resume` / `fork` / `switch` / `open-project` / `reload`) are registered as `/welcome:*` commands because their handlers receive `ExtensionCommandContext` — the **only** place pi exposes session mutation. Extension `session_start` / `registerShortcut` handlers receive plain `ExtensionContext`, and there is no `invokeCommand`/`runAction` API, so welcome can't fire those commands by key — they're typed as slash commands (listed in the dashboard's menu legend).
 
 A single small upstream addition would light all of them up as one-key: `ctx.invokeCommand(name, args?)` on `ExtensionContext` (or handing `ExtensionCommandContext` to shortcut/overlay handlers). That's the v0.2 milestone.
 

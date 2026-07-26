@@ -1,26 +1,25 @@
 # @getpipher/welcome
 
-Pure-UI pi coding-agent extension rendering a dismissible **home-page overlay** at startup: a branded splash (RECTOR LABS ASCII logo), recent sessions + recent git projects, a full key legend, and a footer with TODO/model/version stats. On the first keystroke the overlay tears itself down and pi is **100% native** — no persistent custom strip, no coexist, no blocking. No native hotkey rebinding.
+Pure-UI pi coding-agent extension rendering an information-only **startup dashboard widget** (not an overlay): a branded panel (RECTOR LABS logo), recent sessions + recent git projects, a key legend, and a footer with TODO/model/version stats — mounted above the live prompt field via `setWidget({ placement: "aboveEditor" })`, alongside pi's native `[Context]`/`[Skills]`/`[Extensions]` startup info, then cleared on the first agent turn. No occlusion, no key hijacking, no native hotkey rebinding — the prompt is live the instant pi starts.
 
 ## Design
 
-See `docs/superpowers/specs/2026-07-24-getpipher-welcome-design.md` for the full design spec and `docs/superpowers/plans/2026-07-24-getpipher-welcome.md` for the implementation plan.
+See `docs/superpowers/specs/2026-07-26-getpipher-welcome-widget-redesign.md` (current) and the superseded `2026-07-24-getpipher-welcome-design.md` (overlay model, v0.1.0–v0.1.5).
 
 ## How it behaves
 
-- **Startup** → full-screen home page overlay (logo, header, recent sessions + projects, menu, footer).
-- **`?`** → layer the help/keys sub-overlay on top (does NOT dismiss; `Esc` returns to home).
-- **One-key actions** (`m` model · `T` thinking · `h` theme · `q` quit) → dismiss, then run the action. These are the *only* intercepted letters; they're shown in the menu's `one-key` row.
-- **Any other single printable char** → dismiss, then `pasteToEditor` it into the native editor — typing "abc" works instantly, zero lost chars. (Caveat: `h`/`m`/`q`/`T` are hijacked as one-key actions, so typing "hello…" opens the theme picker on `h` — read the `one-key` row first.)
-- **Non-printable / multi-byte keys** (`Esc`, arrows, `Ctrl+` combos) → dismiss only; user re-presses natively (can't be cleanly re-injected via `pasteToEditor`).
-- **Command-backed actions** (`/welcome:switch`, `/welcome:new`, `/welcome:resume`, `/welcome:fork`, `/welcome:open-project`, `/welcome:reload`, `/todo`) → shown as bare slash commands in the menu; type them after the overlay dismisses. pi v0.1 has no `invokeCommand` on the overlay `ExtensionContext`, so these can't be one-key.
-- **`Ctrl+Shift+H`** (after dismiss) → re-open the home page.
+- **`session_start`** (reason `startup` | `reload`) → `setWidget("welcome", …, { placement: "aboveEditor" })` mounts the dashboard panel above the live prompt field. The prompt is native and focused immediately — you type with no dismiss step.
+- **Native startup kept** — `quietStartup` stays `false`, so pi renders its own `[Context]`/`[Skills]`/`[Extensions]`/package-update blocks above the welcome dashboard. Nothing is recreated.
+- **`agent_start`** → `setWidget("welcome", undefined)` clears the dashboard. Startup-only: it behaves like pi's native startup blocks (shows, then scrolls away on the first turn).
+- **No key interception** — welcome hijacks no letters. Model / thinking / quit / theme use pi's native keybindings (`Ctrl+L` / `Shift+Tab` / `Ctrl+D` / `/theme`), listed in the dashboard's menu legend.
+- **Command-backed actions** (`/welcome:switch`, `/welcome:new`, `/welcome:resume`, `/welcome:fork`, `/welcome:open-project`, `/welcome:reload`, `/todo`) → typed as slash commands (pi v0.1 has no `invokeCommand` on `ExtensionContext`).
+- **`Ctrl+Shift+H`** → toggle the dashboard on/off.
 
 ## Guarantees
 
-- `keybindings.json` untouched. Native hotkeys (Ctrl+P, Ctrl+C/D, /reload, Ctrl+O) work identically before/after the overlay.
-- The extension only interprets keys while its overlay has focus (transient startup state). After dismissal it renders nothing.
-- **Forwarding works in pi 0.82.0+** — the original 2026-07-24 spike found `pasteToEditor`-after-`done()` infeasible ("hello"→"ello"), but that's overturned in current pi; `done()` then `ctx.ui.pasteToEditor(char)` forwards the first char cleanly. See `lib/home/key-routing.ts`.
+- `keybindings.json` untouched. Native hotkeys (Ctrl+P, Ctrl+C/D, /reload, Ctrl+O, Ctrl+L, Shift+Tab) work identically with/without the dashboard.
+- Welcome never captures keys — the prompt is always live. No overlay, no dismiss, no forwarding.
+- The dashboard is a widget (not an occluding overlay); pi's native startup info stays visible alongside it.
 
 ## Development
 
