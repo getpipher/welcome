@@ -108,10 +108,12 @@ export function center(s: string, width: number): string {
  * (handles stale/narrowed panes and CJK-font double-width box chars) so the logo
  * never overflows and clips (the "RECTOR LA" bug). */
 export function renderLogo(layout: LayoutConfig, c: HomeColors, width: number): string[] {
-  const variants: Array<"full" | "small" | "wordmark"> =
-    layout.logo === "full" ? ["full", "small", "wordmark"]
-    : layout.logo === "small" ? ["small", "wordmark"]
-    : ["wordmark"];
+  // Downgrade chain: try the layout's chosen variant, then fall back to
+  // narrower ones until one fits `width` (handles stale/narrowed panes and
+  // CJK-font double-width box chars) so the logo never overflows and clips
+  // (the "RECTOR LA" bug).
+  const variants: Array<"small" | "wordmark"> =
+    layout.logo === "small" ? ["small", "wordmark"] : ["wordmark"];
   const chosen = variants.find((v) => {
     const lines = logoFor(v);
     return lines.every((l) => visibleWidth(l) <= width);
@@ -162,11 +164,19 @@ function titledBox(
 }
 
 /** A single recent-session row: `1  name · count  reltime`. Raw — clipped by the box. */
-function sessionRow(idx: number, s: SessionEntry, c: HomeColors, nowSec: number): string {
+function sessionRow(idx: number, s: SessionEntry, c: HomeColors, nowSec: number, maxWidth: number): string {
   const num = c.key(`${idx}`);
-  const name = c.text(s.name);
+  // Defensive: collapse newlines so a multi-line firstMessage never shatters
+  // the box rows. Sessions whose name is the first prompt can contain \n.
+  const name = c.text(s.name.replace(/\s*\n[\s\n]*/g, " ").trim());
   const tail = c.dim(`${s.messageCount} msg · ${relTime(s.lastActivityEpoch, nowSec)}`);
-  return `${num}  ${name}  ${tail}`;
+  // Layout: "N  <name>  <tail>". Truncate the NAME (not the whole row) with an
+  // ellipsis so the tail (msg count + time) always stays visible on long names.
+  const prefix = `${num}  `;
+  const sep = "  ";
+  const budget = maxWidth - visibleWidth(prefix) - sep.length - visibleWidth(tail);
+  const shown = budget > 0 ? truncateToWidth(name, budget, "…", false) : name;
+  return `${prefix}${shown}${sep}${tail}`;
 }
 
 /** A single recent-project row: `5  org/repo · branch · glyph · reltime`. Raw — clipped by the box. */
@@ -197,7 +207,13 @@ export function renderRecents(
   width: number,
   nowSec: number,
 ): string[] {
-  const sRows = sessions.map((s, i) => sessionRow(i + 1, s, c, nowSec));
+  const twoCol = layout.recentsColumns === 2 && width >= 90;
+  // Session-box inner width — pre-computed so sessionRow can truncate the name
+  // to fit (keeping the tail visible) instead of clipping the whole row.
+  const sInner = twoCol
+    ? Math.max(0, Math.floor((width - 1) / 2) - 4)
+    : Math.max(0, width - 4);
+  const sRows = sessions.map((s, i) => sessionRow(i + 1, s, c, nowSec, sInner));
   const pRows = projects.map((p, i) =>
     projectRow(sessions.length + i + 1, p, projectStatuses[i], c, nowSec),
   );
