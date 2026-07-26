@@ -31,13 +31,22 @@ export async function recentSessions(
 
   const entries = infos
     .filter((s) => s.id !== currentSessionId)
-    .map((s): SessionEntry => ({
-      name: s.name?.trim() || s.firstMessage?.slice(0, 40).trim() || s.id,
-      path: s.path,
-      cwd: s.cwd,
-      lastActivityEpoch: Math.floor(s.modified.getTime() / 1000),
-      messageCount: s.messageCount,
-    }))
+    .map((s): SessionEntry => {
+      // Session names fall back to the first user message, which can contain
+      // newlines (multi-line prompts). Collapse to a single line so box rows
+      // never break. Take the first non-empty line, trimmed.
+      const singleLine = (raw: string | undefined): string =>
+        raw?.split("\n").map((l) => l.trim()).find((l) => l.length > 0) ?? "";
+      const name =
+        singleLine(s.name) || singleLine(s.firstMessage)?.slice(0, 40) || s.id;
+      return {
+        name,
+        path: s.path,
+        cwd: s.cwd,
+        lastActivityEpoch: Math.floor(s.modified.getTime() / 1000),
+        messageCount: s.messageCount,
+      };
+    })
     .sort((a, b) => b.lastActivityEpoch - a.lastActivityEpoch)
     .slice(0, limit);
 

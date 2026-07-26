@@ -74,20 +74,21 @@ test("logoFor returns fresh copies (no shared mutation)", () => {
 
 // ─── width-aware layout selection ───────────────────────────────────────────
 
-test("layoutFor: <60 cols → wordmark, 60-119 → small, >=120 → full", () => {
+test("layoutFor: <60 cols → wordmark, >=60 → small (consistent across all panes)", () => {
   assert.equal(layoutFor(50, 30).logo, "wordmark");
   assert.equal(layoutFor(59, 30).logo, "wordmark");
   assert.equal(layoutFor(60, 30).logo, "small");
   assert.equal(layoutFor(90, 30).logo, "small");
   assert.equal(layoutFor(119, 30).logo, "small");
-  assert.equal(layoutFor(120, 30).logo, "full");
-  assert.equal(layoutFor(200, 40).logo, "full");
+  assert.equal(layoutFor(120, 30).logo, "small");
+  assert.equal(layoutFor(200, 40).logo, "small");
 });
 
 // ─── renderLogo never overflows the width (defensive downgrade) ─────────────
 
-test("renderLogo: full block at width 200 fits within 200 (no overflow)", () => {
+test("renderLogo: small block at width 200 fits within 200 (no overflow)", () => {
   const layout = layoutFor(200, 40);
+  assert.equal(layout.logo, "small");
   const lines = renderLogo(layout, plainColors, 200);
   for (const l of lines) {
     assert.ok(visibleWidth(l) <= 200, `logo line overflows: ${visibleWidth(l)}`);
@@ -110,11 +111,11 @@ test("renderLogo: wordmark at width 50 fits within 50", () => {
   }
 });
 
-test("renderLogo: defensive downgrade — full layout at narrow width never overflows", () => {
-  // Even if layout.logo says "full" but the actual width is too small, renderLogo
-  // must not produce a line wider than width (the "RECTOR LA" clip bug).
-  const layout = layoutFor(200, 40); // logo: "full"
-  assert.equal(layout.logo, "full");
+test("renderLogo: defensive downgrade — small layout at narrow width never overflows", () => {
+  // Even when the real width is much smaller than the layout's chosen variant,
+  // renderLogo must not produce a line wider than width (the "RECTOR LA" clip bug).
+  const layout = layoutFor(200, 40); // logo: "small"
+  assert.equal(layout.logo, "small");
   // Simulate a narrowed/stale pane where the real width is much smaller:
   for (const w of [40, 50, 60, 70, 80]) {
     const lines = renderLogo(layout, plainColors, w);

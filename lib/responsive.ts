@@ -3,8 +3,8 @@ export interface LayoutConfig {
   recentsColumns: 1 | 2; // 1 if narrow, else 2
   sessionsCount: number;
   projectsCount: number;
-  /** Logo variant chosen by width so it always fits: wordmark(<60) | small(60-119) | full(>=120). */
-  logo: "wordmark" | "small" | "full";
+  /** Logo variant chosen by width so it always fits: wordmark(<60) | small(>=60). */
+  logo: "wordmark" | "small";
   /** Rendered logo content height (excl. the leading blank line) — drives the row budget. */
   logoHeight: number;
   recentsTotal: number;
@@ -18,11 +18,12 @@ const NARROW = { sessions: 3, projects: 2 };
 const MEDIUM = { sessions: 4, projects: 4 };
 const WIDE = { sessions: 6, projects: 6 };
 
-/** Pick the logo variant that fits `cols` with margin: wordmark < 60 <= small < 120 <= full. */
+/** Pick the logo variant: wordmark(<60) | small(>=60). The compact figlet-small
+ * block is used at every width >= 60 (the full block is intentionally unused —
+ * the small font is the house style for all panes). */
 function pickLogo(cols: number): { logo: LayoutConfig["logo"]; height: number } {
   if (cols < 60) return { logo: "wordmark", height: 1 };
-  if (cols < 120) return { logo: "small", height: SMALL_LOGO_LINES };
-  return { logo: "full", height: FULL_LOGO_LINES };
+  return { logo: "small", height: SMALL_LOGO_LINES };
 }
 
 /**

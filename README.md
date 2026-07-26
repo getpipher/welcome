@@ -8,7 +8,8 @@ An information-only **startup dashboard** for the [pi coding agent](https://gith
 
 On `session_start` (startup and `/reload` only — not on `new`/`resume`/`fork` navigation), it renders a dashboard panel above the editor via `setWidget({ placement: "aboveEditor" })`:
 
-- **RECTOR LABS** ASCII logo, width-aware: compact wordmark under 60 cols, small block (plain ASCII) at 60–119, full block at ≥ 120 — never overflows or clips.
+- **RECTOR LABS** ASCII logo: compact wordmark under 60 cols, small figlet block at ≥ 60 (consistent across all pane sizes — never overflows or clips).
+- Session names with embedded newlines (multi-line first prompts) are collapsed to a single line; long names are truncated with an ellipsis so the msg-count/time tail always stays visible inside the recents box.
 - **Header**: current datetime, `cwd`, git branch + status glyph.
 - **Recent sessions** (from pi's session manager) and **recent projects** (git scan of `~/local-dev` + `~/dotfiles`, cached 5 min), each row with branch + dirty/ahead/behind/conflict status and relative time.
 - **Two-column key legend** grouped under `sessions` / `projects` / `model` / `workflow` / `system`.

@@ -1,6 +1,6 @@
 {
   "name": "@getpipher/welcome",
-  "version": "0.1.6",
+  "version": "0.1.7",
   "description": "Stunning, dismissible home-page overlay for the pi coding agent — branded splash at startup, then 100% native pi. No native hotkey rebinding.",
   "keywords": ["pi-package", "pi-extension", "welcome", "home", "dashboard", "splash", "tui"],
   "license": "MIT",
