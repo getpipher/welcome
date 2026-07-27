@@ -1,6 +1,6 @@
 # @getpipher/welcome
 
-An information-only **startup dashboard** for the [pi coding agent](https://github.com/earendil-works/pi-coding-agent). At startup it mounts a branded `RECTOR LABS` panel above the live prompt — logo, recent sessions, recent git projects, a key legend, and footer stats — **alongside** pi's native `[Context]`/`[Skills]`/`[Extensions]` startup info, then clears itself on the first agent turn so it scrolls away like the rest of the startup output. No overlay, nothing occluded, no native hotkey rebinding, no key hijacking — the prompt is live the instant pi starts.
+An information-only **startup dashboard** for the [pi coding agent](https://github.com/earendil-works/pi-coding-agent). At startup it mounts a branded `RECTOR LABS` panel above the live prompt — logo, header (datetime + cwd/branch/status), and recent sessions + recent git projects boxes — **alongside** pi's native `[Context]`/`[Skills]`/`[Extensions]` startup info, then clears itself on the first agent turn so it scrolls away like the rest of the startup output. No overlay, nothing occluded, no native hotkey rebinding, no key hijacking — the prompt is live the instant pi starts.
 
 > In-house for `@getpipher`. Built against pi 0.82.
 
@@ -12,9 +12,7 @@ On `session_start` (startup and `/reload` only — not on `new`/`resume`/`fork` 
 - Session names with embedded newlines (multi-line first prompts) are collapsed to a single line; long names are truncated with an ellipsis so the msg-count/time tail always stays visible inside the recents box.
 - **Header**: current datetime, `cwd`, git branch + status glyph.
 - **Recent sessions** (from pi's session manager) and **recent projects** (git scan of `~/local-dev` + `~/dotfiles`, cached 5 min), each row with branch + dirty/ahead/behind/conflict status and relative time.
-- **Two-column key legend** grouped under `sessions` / `projects` / `model` / `workflow` / `system`.
-- **Footer**: open TODO count (armory-todo, loose coupling), current model, pi version, session count, time-based greeting.
-- Responsive: single-column stacked recents + abbreviated menu under 90 cols; side-by-side + full menu at 90–149; 6+6 recents at ≥ 150.
+- Responsive: single-column stacked recents under 90 cols; side-by-side at 90–149; 6+6 recents at ≥ 150.
 
 ## Startup dashboard (widget, not an overlay)
 
@@ -34,12 +32,12 @@ focused the instant pi starts; you can type immediately.
 
 Welcome hijacks **no keys** — every keystroke goes to the prompt. Model /
 thinking / quit / theme use pi's native keybindings (`Ctrl+L` / `Shift+Tab` /
-`Ctrl+D` / `/theme`), listed in the dashboard's menu legend.
+`Ctrl+D` / `/theme`).
 
 ## Keys
 
-Welcome defines **no one-key hotkeys**. The dashboard's menu legend lists the
-`/welcome:*` commands to type and pi's native keys:
+Welcome defines **no one-key hotkeys**. The `/welcome:*` commands below are
+typed as slash commands; pi's native keys are listed for reference:
 
 | Command | Action |
 |---|---|

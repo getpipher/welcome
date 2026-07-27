@@ -5,7 +5,6 @@
  * behaves like pi's native `[Context]`/`[Skills]` startup blocks (shows, then
  * scrolls away). No overlay, no dismiss, no key routing.
  */
-import { VERSION } from "@earendil-works/pi-coding-agent";
 import type { ExtensionContext } from "@earendil-works/pi-coding-agent";
 import type { Component } from "@earendil-works/pi-tui";
 
@@ -14,13 +13,10 @@ import { colors, type HomeColors } from "../theme.ts";
 import { recentSessions, type SessionEntry } from "../data/sessions.ts";
 import { scanProjects, sortRecent, type ProjectEntry } from "../data/projects.ts";
 import { parseGitPorcelain, type RepoStatus } from "../data/git.ts";
-import { openTodoCount } from "../data/todos.ts";
 import {
   renderLogo,
   renderHeader,
   renderRecents,
-  renderMenu,
-  renderFooter,
   tildify,
   padRight,
 } from "./regions.ts";
@@ -55,16 +51,12 @@ export function buildDashboardLines(args: {
   sessions: SessionEntry[];
   projects: ProjectEntry[];
   projectStatuses: (RepoStatus | undefined)[];
-  todoCount: number | undefined;
-  modelLabel: string;
-  piVersion: string;
-  sessionCount: number;
   nowSec: number;
   now: Date;
 }): string[] {
   const {
     layout, c, cols, cwdDisplay, headerStatus, sessions, projects,
-    projectStatuses, todoCount, modelLabel, piVersion, sessionCount, nowSec, now,
+    projectStatuses, nowSec, now,
   } = args;
   const visibleSessions = sessions.slice(0, layout.sessionsCount);
   const visibleProjects = projects.slice(0, layout.projectsCount);
@@ -74,8 +66,6 @@ export function buildDashboardLines(args: {
   lines.push(
     ...renderRecents(layout, c, visibleSessions, visibleProjects, projectStatuses, cols, nowSec),
   );
-  lines.push(...renderMenu(layout, c, cols, visibleSessions.length, visibleProjects.length));
-  lines.push(...renderFooter(c, todoCount, modelLabel, piVersion, sessionCount, now, cols));
   return lines;
 }
 
@@ -98,19 +88,17 @@ export function showDashboard(ctx: ExtensionContext): void {
         | {
           sessions: SessionEntry[];
           projects: ProjectEntry[];
-          todoCount: number | undefined;
           headerStatus: RepoStatus | undefined;
         }
         | undefined;
 
       void (async () => {
-        const [sessions, projects, todoCount, headerStatus] = await Promise.all([
+        const [sessions, projects, headerStatus] = await Promise.all([
           recentSessions(currentId, 8),
           scanProjects([`${HOME}/local-dev`, `${HOME}/dotfiles`]).then((p) => sortRecent(p, 8)),
-          openTodoCount(),
           gitStatus(ctx.cwd),
         ]);
-        data = { sessions, projects, todoCount, headerStatus };
+        data = { sessions, projects, headerStatus };
         const layout = layoutFor(tui.terminal.columns, tui.terminal.rows);
         const visible = projects.slice(0, layout.projectsCount);
         const results = await Promise.all(visible.map((p) => gitStatus(p.path)));
@@ -124,15 +112,12 @@ export function showDashboard(ctx: ExtensionContext): void {
           if (!data) return [];
           const cols = width;
           const layout = layoutFor(cols, tui.terminal.rows);
-          const modelLabel = ctx.model?.name ?? ctx.model?.id ?? "no model";
-          const sessionCount = currentId ? data.sessions.length + 1 : data.sessions.length;
           return buildDashboardLines({
             layout, c, cols,
             cwdDisplay: tildify(ctx.cwd, HOME),
             headerStatus: data.headerStatus,
             sessions: data.sessions, projects: data.projects, projectStatuses,
-            todoCount: data.todoCount, modelLabel, piVersion: VERSION,
-            sessionCount, nowSec: Math.floor(Date.now() / 1000), now: new Date(),
+            nowSec: Math.floor(Date.now() / 1000), now: new Date(),
           }).map((l) => padRight(l, cols));
         },
         invalidate: () => tui.requestRender(),

@@ -14,7 +14,7 @@ const plainColors: HomeColors = {
   fg: (_c, t) => t,
 };
 
-test("buildDashboardLines returns non-empty lines with menu + footer stats", () => {
+test("buildDashboardLines renders logo + recents boxes, no menu/footer legend", () => {
   const layout = layoutFor(120, 40);
   const sessions: SessionEntry[] = [
     { name: "[demo_1]", path: "/x", cwd: "/x", lastActivityEpoch: 1, messageCount: 5 },
@@ -26,13 +26,17 @@ test("buildDashboardLines returns non-empty lines with menu + footer stats", () 
     layout, c: plainColors, cols: 120,
     cwdDisplay: "~/welcome", headerStatus: undefined,
     sessions, projects, projectStatuses: [],
-    todoCount: 3, modelLabel: "glm-5.2", piVersion: "0.82.1",
-    sessionCount: 1, nowSec: 1000, now: new Date(0),
+    nowSec: 1000, now: new Date(0),
   });
   assert.ok(lines.length > 0, "must produce lines");
   const joined = lines.join("\n");
-  assert.ok(joined.includes("welcome"), "menu commands present");
-  assert.ok(joined.includes("open TODOs"), "footer stats present");
+  // recents boxes present (the "box info")
+  assert.ok(joined.includes("recent sessions"), "sessions box present");
+  assert.ok(joined.includes("recent projects"), "projects box present");
+  // menu legend + footer removed
+  assert.ok(!joined.includes("/welcome:switch"), "menu legend removed");
+  assert.ok(!joined.includes("open TODOs"), "footer stats removed");
+  assert.ok(!joined.includes("key or type to begin"), "footer greeting removed");
 });
 
 test("buildDashboardLines adapts to narrow layout (small logo, no overflow)", () => {
@@ -41,7 +45,6 @@ test("buildDashboardLines adapts to narrow layout (small logo, no overflow)", ()
     layout, c: plainColors, cols: 70,
     cwdDisplay: "~/w", headerStatus: undefined,
     sessions: [], projects: [], projectStatuses: [],
-    todoCount: 0, modelLabel: "m", piVersion: "0.82", sessionCount: 0,
     nowSec: 1, now: new Date(0),
   });
   for (const l of lines) {

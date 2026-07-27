@@ -12,7 +12,7 @@ export interface LayoutConfig {
 
 export const FULL_LOGO_LINES = 6; // full ASCII block height (kept for tests/back-compat)
 export const SMALL_LOGO_LINES = 4; // compact figlet-small block height
-export const CHROME_ROWS = 9; // header(2) + blank(1) + menu(5) + footer(1) — tuned by QA
+export const CHROME_ROWS = 3; // header(2) + blank(1) — menu/footer legend removed
 
 const NARROW = { sessions: 3, projects: 2 };
 const MEDIUM = { sessions: 4, projects: 4 };

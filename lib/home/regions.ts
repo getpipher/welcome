@@ -56,24 +56,6 @@ export function formatDateTime(d: Date): string {
   return `${weekday}, ${month} ${day}, ${year} · ${h}:${min} ${ampm}`;
 }
 
-/** Time-based greeting: "Good morning/afternoon/evening, RECTOR ☀️". */
-export function greeting(d: Date): string {
-  const h = d.getHours();
-  let part = "evening";
-  let icon = "🌙";
-  if (h >= 5 && h < 12) {
-    part = "morning";
-    icon = "☀️";
-  } else if (h >= 12 && h < 18) {
-    part = "afternoon";
-    icon = "☀️";
-  } else if (h >= 18 && h < 22) {
-    part = "evening";
-    icon = "🌅";
-  }
-  return `Good ${part}, RECTOR ${icon}`;
-}
-
 /** Replace $HOME with ~ in an absolute path. */
 export function tildify(path: string, home: string): string {
   if (path === home) return "~";
@@ -249,60 +231,3 @@ export function renderRecents(
   return out;
 }
 
-/** One menu line: `label   item · item ...` (items are pre-formatted strings). */
-function menuLine(label: string, items: string[], c: HomeColors): string {
-  return [c.muted(label.padEnd(10, " ")), items.join(c.dim(" · "))].join(c.dim("  "));
-}
-
-/**
- * Menu region — information-only legend for the dashboard widget. The prompt
- * is always live (no overlay, no key interception), so there are no one-key
- * hotkeys. Lists the `/welcome:*` commands to type, plus pi's native keys for
- * model/thinking/quit/theme (those aren't welcome's to claim). Compact form when
- * narrow (shorter command names).
- */
-export function renderMenu(
-  layout: LayoutConfig,
-  c: HomeColors,
-  width: number,
-  _sessionCount: number,
-  _projectCount: number,
-): string[] {
-  const compact = layout.layout === "narrow";
-  const sw = compact ? "/welcome:sw" : "/welcome:switch";
-  const newCmd = "/welcome:new";
-  const res = compact ? "/welcome:res" : "/welcome:resume";
-  const fork = "/welcome:fork";
-  const proj = compact ? "/welcome:proj" : "/welcome:open-project";
-  const todo = "/todo";
-  const rld = compact ? "/welcome:rld" : "/welcome:reload";
-
-  const lines: string[] = [
-    menuLine("sessions", [sw, newCmd, res, fork], c),
-    menuLine("projects", [`${proj} <n>`], c),
-    menuLine("workflow", [todo], c),
-    menuLine("system", [rld, `${c.key("Ctrl+L")} model`, `${c.key("Shift+Tab")} thinking`, `${c.key("Ctrl+D")} quit`, `${c.key("/theme")} theme`], c),
-    c.dim("  Ctrl+Shift+H toggles this dashboard; just start typing to prompt"),
-  ];
-  return ["", ...lines.map((l) => clip(l, width))];
-}
-
-/** Footer region: stats line + greeting line. */
-export function renderFooter(
-  c: HomeColors,
-  todoCount: number | undefined,
-  modelLabel: string,
-  piVersion: string,
-  sessionCount: number,
-  now: Date,
-  width: number,
-): string[] {
-  const segs: string[] = [];
-  if (todoCount !== undefined) segs.push(c.warning(`${todoCount} open TODOs`));
-  segs.push(c.text(modelLabel));
-  segs.push(c.dim(`pi ${piVersion}`));
-  segs.push(c.dim(`${sessionCount} sessions`));
-  const stats = segs.join(c.dim(" · "));
-  const greet = c.muted(`${greeting(now)}  — key or type to begin`);
-  return ["", clip(stats, width), clip(greet, width)];
-}
