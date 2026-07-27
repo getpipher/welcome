@@ -8,7 +8,10 @@ See `docs/superpowers/specs/2026-07-26-getpipher-welcome-widget-redesign.md` (cu
 
 ## How it behaves
 
-- **`session_start`** (reason `startup` | `reload`) → `setWidget("welcome", …, { placement: "aboveEditor" })` mounts the dashboard panel above the live prompt field. The prompt is native and focused immediately — you type with no dismiss step.
+- **`session_start`** (fresh session only) → `setWidget("welcome", …, { placement: "aboveEditor" })` mounts the dashboard panel above the live prompt field. The prompt is native and focused immediately — you type with no dismiss step.
+  - Fires only on `reason: "startup"` AND when the session has no existing message entries.
+  - **`reload` is excluded** — `/reload` is a mid-session refresh; the dashboard must not re-mount over an ongoing chat.
+  - **Resumed sessions are excluded** — on a cold launch pi always fires `reason: "startup"` (even for `--continue`/`--resume`/`--session`, because the initial runtime is created without a `sessionStartEvent`, defaulting to `startup`). The `resume`/`new`/`fork` reasons only fire for mid-session session replacement. So to detect a resumed chat, welcome checks `ctx.sessionManager.getEntries()` for existing `message` entries and skips the dashboard when conversation history is present.
 - **Native startup kept** — `quietStartup` stays `false`, so pi renders its own `[Context]`/`[Skills]`/`[Extensions]`/package-update blocks above the welcome dashboard. Nothing is recreated.
 - **`agent_start`** → `setWidget("welcome", undefined)` clears the dashboard. Startup-only: it behaves like pi's native startup blocks (shows, then scrolls away on the first turn).
 - **No key interception** — welcome hijacks no letters. Model / thinking / quit / theme use pi's native keybindings (`Ctrl+L` / `Shift+Tab` / `Ctrl+D` / `/theme`).
