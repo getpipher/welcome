@@ -197,7 +197,7 @@ export function renderRecents(
     : Math.max(0, width - 4);
   const sRows = sessions.map((s, i) => sessionRow(i + 1, s, c, nowSec, sInner));
   const pRows = projects.map((p, i) =>
-    projectRow(sessions.length + i + 1, p, projectStatuses[i], c, nowSec),
+    projectRow(i + 1, p, projectStatuses[i], c, nowSec),
   );
   if (sRows.length === 0) sRows.push(c.dim("— no other sessions —"));
   if (pRows.length === 0) pRows.push(c.dim("— no projects found —"));
