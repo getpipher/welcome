@@ -1,7 +1,7 @@
 {
   "name": "@getpipher/welcome",
-  "version": "0.1.8",
-  "description": "Stunning, dismissible home-page overlay for the pi coding agent — branded splash at startup, then 100% native pi. No native hotkey rebinding.",
+  "version": "0.1.9",
+  "description": "Information-only startup dashboard widget for pi/omp coding agents — branded panel above the live prompt at startup, cleared on the first agent turn. No overlay, no hotkey rebinding.",
   "keywords": ["pi-package", "pi-extension", "welcome", "home", "dashboard", "splash", "tui"],
   "license": "MIT",
   "author": "RECTOR <rector@rectorspace.com>",
