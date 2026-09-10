@@ -74,7 +74,9 @@ export function buildDashboardLines(args: {
  * Data is gathered async after mount; the first paint is empty, then a complete
  * paint lands once `data` is set and the widget invalidates.
  */
+let dashboardVisible = false;
 export function showDashboard(ctx: ExtensionContext): void {
+  dashboardVisible = true;
   if (ctx.mode !== "tui" || !ctx.hasUI) return;
   const currentId = ctx.sessionManager.getSessionId();
 
@@ -133,18 +135,16 @@ export function showDashboard(ctx: ExtensionContext): void {
 
 /** Remove the dashboard widget (startup-only: called on agent_start). */
 export function clearDashboard(ctx: ExtensionContext): void {
+  dashboardVisible = false;
   if (ctx.mode !== "tui" || !ctx.hasUI) return;
   ctx.ui.setWidget(WIDGET_KEY, undefined, { placement: "aboveEditor" });
 }
 
-/** Toggle visibility (Ctrl+Shift+H). Tracks state via a module flag. */
-let dashboardVisible = false;
+/** Toggle visibility (Ctrl+Shift+H). State tracked by show/clear. */
 export function toggleDashboard(ctx: ExtensionContext): void {
   if (dashboardVisible) {
     clearDashboard(ctx);
-    dashboardVisible = false;
   } else {
     showDashboard(ctx);
-    dashboardVisible = true;
   }
 }
