@@ -13,15 +13,11 @@ export default function welcomeExtension(pi: ExtensionAPI): void {
   //
   // Fires only on a FRESH session:
   //  - Drop `reload` — /reload is mid-session refresh; dashboard shouldn't re-mount.
-  //  - On a cold launch pi always fires reason "startup" (even for --continue/--resume
-  //    /--session, because main.js creates the initial runtime without a
-  //    sessionStartEvent, so agent-session.js defaults it to "startup"). The
-  //    `resume`/`new`/`fork` reasons only fire for mid-session session replacement.
-  //    So to suppress the dashboard when resuming an ongoing chat, we check the
-  //    session manager for existing message entries — present iff the session
-  //    already has conversation history.
+  //  - pi fires reason "startup" on cold launch; omp (18.x) leaves `reason`
+  //    undefined — so treat undefined as startup too. The entries check below is
+  //    the real fresh-session guard: resumed sessions carry message entries.
   pi.on("session_start", (event, ctx) => {
-    if (event.reason !== "startup") return;
+    if (event.reason && event.reason !== "startup") return;
     const hasConversation = ctx.sessionManager.getEntries().some(
       (e) => e.type === "message",
     );
